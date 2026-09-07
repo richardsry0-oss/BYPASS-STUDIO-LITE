@@ -1,5 +1,5 @@
 -- Zyo UI Builder & Component Generator
--- Generates clean, responsive UI templates (Frames, Buttons, Inputs) inside PlayerGui.
+-- Manages UI components and modular UI templates for the Zyo Control Hub.
 
 local Players = game:GetService("Players")
 local player = Players.LocalPlayer
@@ -13,7 +13,6 @@ screenGui.Name = "ZyoUIBuilder"
 screenGui.ResetOnSpawn = false
 screenGui.Parent = playerGui
 
--- Main Container Window
 local window = Instance.new("Frame")
 window.Size = UDim2.fromOffset(300, 360)
 window.Position = UDim2.fromScale(0.3, 0.5)
@@ -29,10 +28,8 @@ stroke.Color = Color3.fromRGB(60, 60, 80)
 stroke.Thickness = 1.5
 stroke.Parent = window
 
--- Top Bar Title
 local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, 0, 0, 40)
-title.Position = UDim2.fromOffset(0, 0)
 title.BackgroundTransparency = 1
 title.Text = "ZYO UI COMPONENT BUILDER"
 title.TextColor3 = Color3.fromRGB(240, 240, 255)
@@ -40,7 +37,6 @@ title.Font = Enum.Font.GothamBold
 title.TextSize = 12
 title.Parent = window
 
--- Scrolling Panel for Template Buttons
 local scrolling = Instance.new("ScrollingFrame")
 scrolling.Size = UDim2.new(1, -20, 1, -60)
 scrolling.Position = UDim2.fromOffset(10, 45)
@@ -80,7 +76,6 @@ local function createTemplateButton(name, desc, callback)
     btn.Activated:Connect(callback)
 end
 
--- 1. Create Notification Toast Template
 createTemplateButton("Notification Toast", "Generates a popup notification banner", function()
     local toast = Instance.new("Frame")
     toast.Size = UDim2.fromOffset(240, 45)
@@ -103,44 +98,6 @@ createTemplateButton("Notification Toast", "Generates a popup notification banne
     task.delay(2.5, function()
         if toast then toast:Destroy() end
     end)
-end)
-
--- 2. Create Floating Action Button (FAB)
-createTemplateButton("Floating Button", "Creates a draggable circular action trigger", function()
-    local fab = Instance.new("TextButton")
-    fab.Size = UDim2.fromOffset(50, 50)
-    fab.Position = UDim2.new(0.8, 0, 0.7, 0)
-    fab.BackgroundColor3 = Color3.fromRGB(45, 120, 220)
-    fab.Text = "+"
-    fab.TextColor3 = Color3.new(1, 1, 1)
-    fab.Font = Enum.Font.GothamBold
-    fab.TextSize = 20
-    fab.Parent = screenGui
-    
-    Instance.new("UICorner", fab).CornerRadius = UDim.new(1, 0)
-end)
-
--- 3. Create Toggle Switch Card
-createTemplateButton("Card Container", "Generates a styled panel container card", function()
-    local card = Instance.new("Frame")
-    card.Size = UDim2.fromOffset(220, 140)
-    card.Position = UDim2.fromScale(0.6, 0.4)
-    card.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
-    card.BorderSizePixel = 0
-    card.Parent = screenGui
-    
-    Instance.new("UICorner", card).CornerRadius = UDim.new(0, 8)
-    
-    local cTitle = Instance.new("TextLabel")
-    cTitle.Size = UDim2.new(1, -20, 0, 30)
-    cTitle.Position = UDim2.fromOffset(10, 10)
-    cTitle.BackgroundTransparency = 1
-    cTitle.Text = "Sample Panel Card"
-    cTitle.TextColor3 = Color3.new(1, 1, 1)
-    cTitle.Font = Enum.Font.GothamBold
-    cTitle.TextSize = 12
-    cTitle.TextXAlignment = Enum.TextXAlignment.Left
-    cTitle.Parent = card
 end)
 
 layout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
