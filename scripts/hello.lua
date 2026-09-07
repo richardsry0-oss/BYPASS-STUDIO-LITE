@@ -1,10 +1,13 @@
--- Zyo Script Scanner Pro+ (Mode Selector & Instant Tool Inspector)
--- Switch between searching by name or instantly inspecting all Tool scripts across services.
+-- Zyo Script Scanner Pro+ (Multi-Service Filter & Bytecode Safe Inspector)
+-- Features: Mode selector (Search, Tools, ServerStorage, ServerScriptService), skips CorePackages, and safe decompilation.
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
 local UserInputService = game:GetService("UserInputService")
 local RunService = game:GetService("RunService")
+local ServerStorage = game:GetService("ServerStorage")
+local ServerScriptService = game:GetService("ServerScriptService")
+local Workspace = game:GetService("Workspace")
 
 local player = Players.LocalPlayer
 if not player then return end
@@ -26,7 +29,7 @@ gui.Parent = targetParent
 
 -- Main Window Frame
 local main = Instance.new("Frame")
-main.Size = UDim2.fromOffset(340, 255)
+main.Size = UDim2.fromOffset(340, 260)
 main.Position = UDim2.fromScale(0.5, 0.5)
 main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -65,14 +68,14 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -50, 1, 0)
 title.Position = UDim2.fromOffset(15, 0)
 title.BackgroundTransparency = 1
-title.Text = "ZYO SCRIPT INSPECTOR"
+title.Text = "ZYO SCRIPT INSPECTOR PRO"
 title.TextColor3 = Color3.fromRGB(240, 240, 255)
 title.TextSize = 14
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = topBar
 
--- Mode Select Button (Toggle between Search Name & Instant Tools)
+-- Mode Select Button (Cycles through Modes)
 local modeButton = Instance.new("TextButton")
 modeButton.Size = UDim2.new(1, -30, 0, 38)
 modeButton.Position = UDim2.fromOffset(15, 52)
@@ -88,7 +91,7 @@ local modeCorner = Instance.new("UICorner")
 modeCorner.CornerRadius = UDim.new(0, 8)
 modeCorner.Parent = modeButton
 
--- Input Name Box (Used in Name Search mode)
+-- Input Name Box (Used only in Name Search mode)
 local nameBox = Instance.new("TextBox")
 nameBox.Size = UDim2.new(1, -30, 0, 40)
 nameBox.Position = UDim2.fromOffset(15, 98)
@@ -107,7 +110,7 @@ local boxCorner = Instance.new("UICorner")
 boxCorner.CornerRadius = UDim.new(0, 8)
 boxCorner.Parent = nameBox
 
--- Action Button (Scan / Instant Load)
+-- Action Button (Scan / Load)
 local checkButton = Instance.new("TextButton")
 checkButton.Size = UDim2.new(1, -30, 0, 42)
 checkButton.Position = UDim2.fromOffset(15, 146)
@@ -128,7 +131,7 @@ local status = Instance.new("TextLabel")
 status.Size = UDim2.new(1, -30, 0, 25)
 status.Position = UDim2.fromOffset(15, 198)
 status.BackgroundTransparency = 1
-status.Text = "Ready. Tap Mode to switch to Instant Tools."
+status.Text = "Ready. Tap Mode to change category."
 status.TextColor3 = Color3.fromRGB(160, 160, 180)
 status.TextSize = 12
 status.Font = Enum.Font.Gotham
@@ -352,26 +355,39 @@ copyButton.Activated:Connect(function()
 end)
 
 ---------------------------------------------------------
--- SCANNING MODES LOGIC
+-- MODES & FILTER LOGIC
 ---------------------------------------------------------
-local currentMode = "Search" -- "Search" or "Tools"
+-- Modes: 1="Search", 2="Tools", 3="ServerStorage", 4="ServerScriptService"
+local modeIndex = 1
+local modes = {
+    {name = "SEARCH BY NAME", color = Color3.fromRGB(0, 220, 160)},
+    {name = "INSTANT TOOL SCRIPTS", color = Color3.fromRGB(255, 170, 50)},
+    {name = "SERVER STORAGE SCRIPTS", color = Color3.fromRGB(120, 160, 255)},
+    {name = "SERVER SCRIPT SERVICE", color = Color3.fromRGB(220, 100, 220)}
+}
 
-modeButton.Activated:Connect(function()
-    if currentMode == "Search" then
-        currentMode = "Tools"
-        modeButton.Text = "Mode: INSTANT TOOL SCRIPTS"
-        modeButton.TextColor3 = Color3.fromRGB(255, 170, 50)
-        nameBox.Visible = false
-        checkButton.Text = "LOAD ALL TOOL SCRIPTS"
-        status.Text = "Mode: Click to instantly list scripts inside Tools."
-    else
-        currentMode = "Search"
-        modeButton.Text = "Mode: SEARCH BY NAME"
-        modeButton.TextColor3 = Color3.fromRGB(0, 220, 160)
+local function updateModeDisplay()
+    local m = modes[modeIndex]
+    modeButton.Text = "Mode: " .. m.name
+    modeButton.TextColor3 = m.color
+    
+    if modeIndex == 1 then
         nameBox.Visible = true
         checkButton.Text = "CHECK FOR ALL SCRIPTS"
         status.Text = "Mode: Enter script name and scan."
+    else
+        nameBox.Visible = false
+        checkButton.Text = "LOAD ALL " .. m.name
+        status.Text = "Mode: Click to instantly list scripts in " .. m.name .. "."
     end
+end
+
+modeButton.Activated:Connect(function()
+    modeIndex = modeIndex + 1
+    if modeIndex > #modes then
+        modeIndex = 1
+    end
+    updateModeDisplay()
 end)
 
 local function getScriptType(instance)
@@ -383,6 +399,18 @@ local function getScriptType(instance)
         return "Script"
     end
     return nil
+end
+
+-- Check if parent or ancestry belongs to CorePackages or CoreGui
+local function isCoreInstance(instance)
+    local current = instance
+    while current and current ~= game do
+        if current.Name == "CorePackages" or current.Name == "CoreGui" or current.ClassName == "CoreGui" then
+            return true
+        end
+        current = current.Parent
+    end
+    return false
 end
 
 local function getPath(instance)
@@ -433,20 +461,23 @@ local function addResult(scriptInstance, scriptType)
     item.Activated:Connect(function()
         codeTitle.Text = "PREVIEW: " .. scriptInstance.Name
         
+        -- Bytecode-safe extraction with fallback mechanisms
         local successSource, sourceContent = pcall(function()
             if getscriptsource then
-                return getscriptsource(scriptInstance)
-            elseif decompile then
-                return decompile(scriptInstance)
-            else
-                return "--[[\nExecutor does not support direct script source retrieval.\n]]--"
+                local src = getscriptsource(scriptInstance)
+                if src and src ~= "" then return src end
             end
+            if decompile then
+                local dec = decompile(scriptInstance)
+                if dec and dec ~= "" then return dec end
+            end
+            return "--[[\nBytecode protection or extraction failed.\n]]--"
         end)
         
         if successSource and sourceContent and sourceContent ~= "" then
             currentSourceCode = sourceContent
         else
-            currentSourceCode = "--[[\nUnable to retrieve source code for this script instance.\n]]--"
+            currentSourceCode = "--[[\nUnable to retrieve source: Bytecode inspection error or empty source.\n]]--"
         end
         
         codeText.Text = currentSourceCode
@@ -467,20 +498,23 @@ checkButton.Activated:Connect(function()
     clearResults()
     local found = 0
 
-    if currentMode == "Search" then
+    if modeIndex == 1 then
+        -- Search By Name across game, skipping CorePackages/CoreGui
         local searchName = nameBox.Text:gsub("^%s*(.-)%s*$", "%1"):lower()
         for _, instance in ipairs(game:GetDescendants()) do
-            local scriptType = getScriptType(instance)
-            if scriptType then
-                if searchName == "" or instance.Name:lower():find(searchName, 1, true) then
-                    addResult(instance, scriptType)
-                    found += 1
+            if not isCoreInstance(instance) then
+                local scriptType = getScriptType(instance)
+                if scriptType then
+                    if searchName == "" or instance.Name:lower():find(searchName, 1, true) then
+                        addResult(instance, scriptType)
+                        found += 1
+                    end
                 end
             end
         end
-    elseif currentMode == "Tools" then
-        -- Instantly scan specifically inside Tool instances across the game
-        for _, instance in ipairs(game:GetDescendants()) do
+    elseif modeIndex == 2 then
+        -- Tools Mode: Scan Workspace and Players for Tools containing scripts
+        for _, instance in ipairs(Workspace:GetDescendants()) do
             if instance:IsA("Tool") then
                 for _, child in ipairs(instance:GetDescendants()) do
                     local scriptType = getScriptType(child)
@@ -489,6 +523,37 @@ checkButton.Activated:Connect(function()
                         found += 1
                     end
                 end
+            end
+        end
+        for _, playerObj in ipairs(Players:GetPlayers()) do
+            for _, instance in ipairs(playerObj:GetDescendants()) do
+                if instance:IsA("Tool") then
+                    for _, child in ipairs(instance:GetDescendants()) do
+                        local scriptType = getScriptType(child)
+                        if scriptType then
+                            addResult(child, scriptType)
+                            found += 1
+                        end
+                    end
+                end
+            end
+        end
+    elseif modeIndex == 3 then
+        -- ServerStorage Mode
+        for _, instance in ipairs(ServerStorage:GetDescendants()) do
+            local scriptType = getScriptType(instance)
+            if scriptType then
+                addResult(instance, scriptType)
+                found += 1
+            end
+        end
+    elseif modeIndex == 4 then
+        -- ServerScriptService Mode
+        for _, instance in ipairs(ServerScriptService:GetDescendants()) do
+            local scriptType = getScriptType(instance)
+            if scriptType then
+                addResult(instance, scriptType)
+                found += 1
             end
         end
     end
@@ -507,7 +572,7 @@ end)
 
 ---------------------------------------------------------
 -- TOUCH DRAGGING FOR MAIN WINDOW
----------------------------------------------------------
+-----
 local dragging, dragInput, dragStart, startPos
 
 topBar.InputBegan:Connect(function(input)
@@ -540,4 +605,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[Zyo Inspector] Loaded successfully.")
+print("[Zyo Inspector Pro] Loaded successfully.")
