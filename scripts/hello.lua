@@ -1,5 +1,5 @@
--- Zyo Script Scanner Pro+ (Multi-Service Filter & Bytecode Safe Inspector)
--- Features: Mode selector (Search, Tools, ServerStorage, ServerScriptService), skips CorePackages, and safe decompilation.
+-- Zyo Main Control Hub & Studio Toolkit
+-- Combines Script Inspector and UI Component Builder into an unified control panel.
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
@@ -17,19 +17,17 @@ local success, container = pcall(function()
 end)
 local targetParent = success and container or player:WaitForChild("PlayerGui")
 
-local oldGui = targetParent:FindFirstChild("ZyoScriptScannerProPlus")
-if oldGui then
-    oldGui:Destroy()
-end
+local oldGui = targetParent:FindFirstChild("ZyoMainHub")
+if oldGui then oldGui:Destroy() end
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "ZyoScriptScannerProPlus"
+gui.Name = "ZyoMainHub"
 gui.ResetOnSpawn = false
 gui.Parent = targetParent
 
--- Main Window Frame
+-- Main Hub Panel
 local main = Instance.new("Frame")
-main.Size = UDim2.fromOffset(340, 260)
+main.Size = UDim2.fromOffset(340, 290)
 main.Position = UDim2.fromScale(0.5, 0.5)
 main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -37,9 +35,7 @@ main.BorderSizePixel = 0
 main.ClipsDescendants = true
 main.Parent = gui
 
-local mainCorner = Instance.new("UICorner")
-mainCorner.CornerRadius = UDim.new(0, 12)
-mainCorner.Parent = main
+Instance.new("UICorner", main).CornerRadius = UDim.new(0, 12)
 
 local mainStroke = Instance.new("UIStroke")
 mainStroke.Color = Color3.fromRGB(50, 50, 70)
@@ -53,9 +49,7 @@ topBar.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
 topBar.BorderSizePixel = 0
 topBar.Parent = main
 
-local topCorner = Instance.new("UICorner")
-topCorner.CornerRadius = UDim.new(0, 12)
-topCorner.Parent = topBar
+Instance.new("UICorner", topBar).CornerRadius = UDim.new(0, 12)
 
 local fixCover = Instance.new("Frame")
 fixCover.Size = UDim2.new(1, 0, 0, 10)
@@ -68,81 +62,108 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -50, 1, 0)
 title.Position = UDim2.fromOffset(15, 0)
 title.BackgroundTransparency = 1
-title.Text = "ZYO SCRIPT INSPECTOR PRO"
+title.Text = "ZYO CONTROL HUB"
 title.TextColor3 = Color3.fromRGB(240, 240, 255)
 title.TextSize = 14
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = topBar
 
--- Mode Select Button (Cycles through Modes)
-local modeButton = Instance.new("TextButton")
-modeButton.Size = UDim2.new(1, -30, 0, 38)
-modeButton.Position = UDim2.fromOffset(15, 52)
-modeButton.BackgroundColor3 = Color3.fromRGB(36, 36, 48)
-modeButton.BorderSizePixel = 0
-modeButton.Text = "Mode: SEARCH BY NAME"
-modeButton.TextColor3 = Color3.fromRGB(0, 220, 160)
-modeButton.TextSize = 13
-modeButton.Font = Enum.Font.GothamBold
-modeButton.Parent = main
+-- Module Selector Modes
+local modes = {"SEARCH", "TOOLS", "SERVERSTORAGE", "SERVERSCRIPTSERVICE"}
+local modeIdx = 1
 
-local modeCorner = Instance.new("UICorner")
-modeCorner.CornerRadius = UDim.new(0, 8)
-modeCorner.Parent = modeButton
+local modeBtn = Instance.new("TextButton")
+modeBtn.Size = UDim2.new(1, -30, 0, 38)
+modeBtn.Position = UDim2.fromOffset(15, 52)
+modeBtn.BackgroundColor3 = Color3.fromRGB(36, 36, 48)
+modeBtn.BorderSizePixel = 0
+modeBtn.Text = "Inspector Mode: " .. modes[modeIdx]
+modeBtn.TextColor3 = Color3.fromRGB(0, 220, 160)
+modeBtn.TextSize = 12
+modeBtn.Font = Enum.Font.GothamBold
+modeBtn.Parent = main
 
--- Input Name Box (Used only in Name Search mode)
+Instance.new("UICorner", modeBtn).CornerRadius = UDim.new(0, 8)
+
 local nameBox = Instance.new("TextBox")
-nameBox.Size = UDim2.new(1, -30, 0, 40)
+nameBox.Size = UDim2.new(1, -30, 0, 38)
 nameBox.Position = UDim2.fromOffset(15, 98)
 nameBox.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
 nameBox.BorderSizePixel = 0
-nameBox.PlaceholderText = "Enter script name..."
+nameBox.PlaceholderText = "Enter script name query..."
 nameBox.Text = ""
 nameBox.TextColor3 = Color3.new(1, 1, 1)
 nameBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
-nameBox.TextSize = 13
+nameBox.TextSize = 12
 nameBox.Font = Enum.Font.Gotham
-nameBox.ClearTextOnFocus = false
 nameBox.Parent = main
 
-local boxCorner = Instance.new("UICorner")
-boxCorner.CornerRadius = UDim.new(0, 8)
-boxCorner.Parent = nameBox
+Instance.new("UICorner", nameBox).CornerRadius = UDim.new(0, 8)
 
--- Action Button (Scan / Load)
-local checkButton = Instance.new("TextButton")
-checkButton.Size = UDim2.new(1, -30, 0, 42)
-checkButton.Position = UDim2.fromOffset(15, 146)
-checkButton.BackgroundColor3 = Color3.fromRGB(45, 120, 220)
-checkButton.BorderSizePixel = 0
-checkButton.Text = "CHECK FOR ALL SCRIPTS"
-checkButton.TextColor3 = Color3.new(1, 1, 1)
-checkButton.TextSize = 13
-checkButton.Font = Enum.Font.GothamBold
-checkButton.Parent = main
+local scanBtn = Instance.new("TextButton")
+scanBtn.Size = UDim2.new(1, -30, 0, 42)
+scanBtn.Position = UDim2.fromOffset(15, 144)
+scanBtn.BackgroundColor3 = Color3.fromRGB(45, 120, 220)
+scanBtn.BorderSizePixel = 0
+scanBtn.Text = "RUN SCRIPT INSPECTOR"
+scanBtn.TextColor3 = Color3.new(1, 1, 1)
+scanBtn.TextSize = 12
+scanBtn.Font = Enum.Font.GothamBold
+scanBtn.Parent = main
 
-local buttonCorner = Instance.new("UICorner")
-buttonCorner.CornerRadius = UDim.new(0, 8)
-buttonCorner.Parent = checkButton
+Instance.new("UICorner", scanBtn).CornerRadius = UDim.new(0, 8)
 
--- Status Label
+-- Launch UI Builder Shortcut Button
+local uiBuilderBtn = Instance.new("TextButton")
+uiBuilderBtn.Size = UDim2.new(1, -30, 0, 40)
+uiBuilderBtn.Position = UDim2.fromOffset(15, 194)
+uiBuilderBtn.BackgroundColor3 = Color3.fromRGB(45, 180, 100)
+uiBuilderBtn.BorderSizePixel = 0
+uiBuilderBtn.Text = "OPEN UI COMPONENT BUILDER"
+uiBuilderBtn.TextColor3 = Color3.new(1, 1, 1)
+uiBuilderBtn.TextSize = 12
+uiBuilderBtn.Font = Enum.Font.GothamBold
+uiBuilderBtn.Parent = main
+
+Instance.new("UICorner", uiBuilderBtn).CornerRadius = UDim.new(0, 8)
+
 local status = Instance.new("TextLabel")
-status.Size = UDim2.new(1, -30, 0, 25)
-status.Position = UDim2.fromOffset(15, 198)
+status.Size = UDim2.new(1, -30, 0, 24)
+status.Position = UDim2.fromOffset(15, 246)
 status.BackgroundTransparency = 1
-status.Text = "Ready. Tap Mode to change category."
+status.Text = "Hub Active. Ready."
 status.TextColor3 = Color3.fromRGB(160, 160, 180)
-status.TextSize = 12
+status.TextSize = 11
 status.Font = Enum.Font.Gotham
 status.TextXAlignment = Enum.TextXAlignment.Left
 status.Parent = main
 
+modeBtn.Activated:Connect(function()
+    modeIdx = modeIdx % #modes + 1
+    modeBtn.Text = "Inspector Mode: " .. modes[modeIdx]
+    nameBox.Visible = (modeIdx == 1)
+end)
+
+uiBuilderBtn.Activated:Connect(function()
+    -- Load UI Builder script dynamically
+    local successBuilder, err = pcall(function()
+        loadstring(game:HttpGet("https://raw.githubusercontent.com/Zyoriofficial/BYPASS-STUDIO-LITE/main/scripts/ui_builder.lua"))()
+    end)
+    if successBuilder then
+        status.Text = "UI Builder loaded successfully."
+        status.TextColor3 = Color3.fromRGB(80, 240, 140)
+    else
+        status.Text = "Failed to load UI Builder."
+        status.TextColor3 = Color3.fromRGB(240, 80, 80)
+    end
+end)
+
 ---------------------------------------------------------
--- RESULTS WINDOW (LIST OF FOUND SCRIPTS)
+-- RESULTS WINDOW
 ---------------------------------------------------------
 local resultsFrame = Instance.new("Frame")
-resultsFrame.Size = UDim2.fromOffset(400, 360)
+resultsFrame.Size = UDim2.fromOffset(380, 340)
 resultsFrame.Position = UDim2.fromScale(0.5, 0.5)
 resultsFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 resultsFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -150,91 +171,57 @@ resultsFrame.BorderSizePixel = 0
 resultsFrame.Visible = false
 resultsFrame.Parent = gui
 
-local resultsCorner = Instance.new("UICorner")
-resultsCorner.CornerRadius = UDim.new(0, 12)
-resultsCorner.Parent = resultsFrame
+Instance.new("UICorner", resultsFrame).CornerRadius = UDim.new(0, 12)
 
-local resultsStroke = Instance.new("UIStroke")
-resultsStroke.Color = Color3.fromRGB(50, 50, 70)
-resultsStroke.Thickness = 1.5
-resultsStroke.Parent = resultsFrame
+local resTop = Instance.new("Frame")
+resTop.Size = UDim2.new(1, 0, 0, 40)
+resTop.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
+resTop.BorderSizePixel = 0
+resTop.Parent = resultsFrame
 
-local resultsTopBar = Instance.new("Frame")
-resultsTopBar.Size = UDim2.new(1, 0, 0, 42)
-resultsTopBar.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
-resultsTopBar.BorderSizePixel = 0
-resultsTopBar.Parent = resultsFrame
+Instance.new("UICorner", resTop).CornerRadius = UDim.new(0, 12)
 
-local resultsTopCorner = Instance.new("UICorner")
-resultsTopCorner.CornerRadius = UDim.new(0, 12)
-resultsTopCorner.Parent = resultsTopBar
+local resTitle = Instance.new("TextLabel")
+resTitle.Size = UDim2.new(1, -50, 1, 0)
+resTitle.Position = UDim2.fromOffset(12, 0)
+resTitle.BackgroundTransparency = 1
+resTitle.Text = "SCRIPT RESULTS"
+resTitle.TextColor3 = Color3.new(1, 1, 1)
+resTitle.Font = Enum.Font.GothamBold
+resTitle.TextSize = 12
+resTitle.TextXAlignment = Enum.TextXAlignment.Left
+resTitle.Parent = resTop
 
-local resultsFix = Instance.new("Frame")
-resultsFix.Size = UDim2.new(1, 0, 0, 10)
-resultsFix.Position = UDim2.new(0, 0, 1, -10)
-resultsFix.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
-resultsFix.BorderSizePixel = 0
-resultsFix.Parent = resultsTopBar
+local closeRes = Instance.new("TextButton")
+closeRes.Size = UDim2.fromOffset(28, 28)
+closeRes.Position = UDim2.new(1, -34, 0.5, -14)
+closeRes.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeRes.Text = "X"
+closeRes.TextColor3 = Color3.new(1, 1, 1)
+closeRes.Font = Enum.Font.GothamBold
+closeRes.TextSize = 11
+closeRes.Parent = resTop
 
-local resultsTitle = Instance.new("TextLabel")
-resultsTitle.Size = UDim2.new(1, -60, 1, 0)
-resultsTitle.Position = UDim2.fromOffset(15, 0)
-resultsTitle.BackgroundTransparency = 1
-resultsTitle.Text = "SCRIPT RESULTS (0)"
-resultsTitle.TextColor3 = Color3.fromRGB(240, 240, 255)
-resultsTitle.TextSize = 14
-resultsTitle.Font = Enum.Font.GothamBold
-resultsTitle.TextXAlignment = Enum.TextXAlignment.Left
-resultsTitle.Parent = resultsTopBar
-
-local closeResultsBtn = Instance.new("TextButton")
-closeResultsBtn.Size = UDim2.fromOffset(32, 32)
-closeResultsBtn.Position = UDim2.new(1, -38, 0.5, -16)
-closeResultsBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeResultsBtn.Text = "X"
-closeResultsBtn.TextColor3 = Color3.new(1, 1, 1)
-closeResultsBtn.TextSize = 13
-closeResultsBtn.Font = Enum.Font.GothamBold
-closeResultsBtn.Parent = resultsTopBar
-
-local closeResCorner = Instance.new("UICorner")
-closeResCorner.CornerRadius = UDim.new(0, 8)
-closeResCorner.Parent = closeResultsBtn
-
-closeResultsBtn.Activated:Connect(function()
-    resultsFrame.Visible = false
-end)
+Instance.new("UICorner", closeRes).CornerRadius = UDim.new(0, 6)
+closeRes.Activated:Connect(function() resultsFrame.Visible = false end)
 
 local scrolling = Instance.new("ScrollingFrame")
-scrolling.Size = UDim2.new(1, -30, 1, -60)
-scrolling.Position = UDim2.fromOffset(15, 50)
-scrolling.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
-scrolling.BorderSizePixel = 0
-scrolling.ScrollBarThickness = 5
+scrolling.Size = UDim2.new(1, -20, 1, -55)
+scrolling.Position = UDim2.fromOffset(10, 48)
+scrolling.BackgroundTransparency = 1
 scrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
+scrolling.ScrollBarThickness = 4
 scrolling.Parent = resultsFrame
-
-local scrollCorner = Instance.new("UICorner")
-scrollCorner.CornerRadius = UDim.new(0, 8)
-scrollCorner.Parent = scrolling
 
 local listLayout = Instance.new("UIListLayout")
 listLayout.Padding = UDim.new(0, 6)
-listLayout.SortOrder = Enum.SortOrder.LayoutOrder
 listLayout.Parent = scrolling
 
-local scrollPadding = Instance.new("UIPadding")
-scrollPadding.PaddingTop = UDim.new(0, 8)
-scrollPadding.PaddingBottom = UDim.new(0, 8)
-scrollPadding.PaddingLeft = UDim.new(0, 8)
-scrollPadding.PaddingRight = UDim.new(0, 8)
-scrollPadding.Parent = scrolling
-
 ---------------------------------------------------------
--- CODE VIEWER WINDOW (PREVIEW & COPY)
+-- CODE VIEWER WINDOW
 ---------------------------------------------------------
 local codeFrame = Instance.new("Frame")
-codeFrame.Size = UDim2.fromOffset(420, 380)
+codeFrame.Size = UDim2.fromOffset(400, 360)
 codeFrame.Position = UDim2.fromScale(0.5, 0.5)
 codeFrame.AnchorPoint = Vector2.new(0.5, 0.5)
 codeFrame.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -242,339 +229,170 @@ codeFrame.BorderSizePixel = 0
 codeFrame.Visible = false
 codeFrame.Parent = gui
 
-local codeCorner = Instance.new("UICorner")
-codeCorner.CornerRadius = UDim.new(0, 12)
-codeCorner.Parent = codeFrame
+Instance.new("UICorner", codeFrame).CornerRadius = UDim.new(0, 12)
 
-local codeStroke = Instance.new("UIStroke")
-codeStroke.Color = Color3.fromRGB(50, 50, 70)
-codeStroke.Thickness = 1.5
-codeStroke.Parent = codeFrame
+local codeTop = Instance.new("Frame")
+codeTop.Size = UDim2.new(1, 0, 0, 40)
+codeTop.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
+codeTop.BorderSizePixel = 0
+codeTop.Parent = codeFrame
 
-local codeTopBar = Instance.new("Frame")
-codeTopBar.Size = UDim2.new(1, 0, 0, 42)
-codeTopBar.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
-codeTopBar.BorderSizePixel = 0
-codeTopBar.Parent = codeFrame
-
-local codeTopCorner = Instance.new("UICorner")
-codeTopCorner.CornerRadius = UDim.new(0, 12)
-codeTopCorner.Parent = codeTopBar
-
-local codeFix = Instance.new("Frame")
-codeFix.Size = UDim2.new(1, 0, 0, 10)
-codeFix.Position = UDim2.new(0, 0, 1, -10)
-codeFix.BackgroundColor3 = Color3.fromRGB(26, 26, 34)
-codeFix.BorderSizePixel = 0
-codeFix.Parent = codeTopBar
+Instance.new("UICorner", codeTop).CornerRadius = UDim.new(0, 12)
 
 local codeTitle = Instance.new("TextLabel")
-codeTitle.Size = UDim2.new(1, -60, 1, 0)
-codeTitle.Position = UDim2.fromOffset(15, 0)
+codeTitle.Size = UDim2.new(1, -50, 1, 0)
+codeTitle.Position = UDim2.fromOffset(12, 0)
 codeTitle.BackgroundTransparency = 1
 codeTitle.Text = "CODE PREVIEW"
-codeTitle.TextColor3 = Color3.fromRGB(240, 240, 255)
-codeTitle.TextSize = 14
+codeTitle.TextColor3 = Color3.new(1, 1, 1)
 codeTitle.Font = Enum.Font.GothamBold
+codeTitle.TextSize = 12
 codeTitle.TextXAlignment = Enum.TextXAlignment.Left
-codeTitle.Parent = codeTopBar
+codeTitle.Parent = codeTop
 
-local closeCodeBtn = Instance.new("TextButton")
-closeCodeBtn.Size = UDim2.fromOffset(32, 32)
-closeCodeBtn.Position = UDim2.new(1, -38, 0.5, -16)
-closeCodeBtn.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
-closeCodeBtn.Text = "X"
-closeCodeBtn.TextColor3 = Color3.new(1, 1, 1)
-closeCodeBtn.TextSize = 13
-closeCodeBtn.Font = Enum.Font.GothamBold
-closeCodeBtn.Parent = codeTopBar
+local closeCode = Instance.new("TextButton")
+closeCode.Size = UDim2.fromOffset(28, 28)
+closeCode.Position = UDim2.new(1, -34, 0.5, -14)
+closeCode.BackgroundColor3 = Color3.fromRGB(200, 50, 50)
+closeCode.Text = "X"
+closeCode.TextColor3 = Color3.new(1, 1, 1)
+closeCode.Font = Enum.Font.GothamBold
+closeCode.TextSize = 11
+closeCode.Parent = codeTop
 
-local closeCodeCorner = Instance.new("UICorner")
-closeCodeCorner.CornerRadius = UDim.new(0, 8)
-closeCodeCorner.Parent = closeCodeBtn
+Instance.new("UICorner", closeCode).CornerRadius = UDim.new(0, 6)
+closeCode.Activated:Connect(function() codeFrame.Visible = false end)
 
-closeCodeBtn.Activated:Connect(function()
-    codeFrame.Visible = false
-end)
+local codeScroll = Instance.new("ScrollingFrame")
+codeScroll.Size = UDim2.new(1, -20, 1, -100)
+codeScroll.Position = UDim2.fromOffset(10, 48)
+codeScroll.BackgroundTransparency = 1
+codeScroll.CanvasSize = UDim2.new(0, 0, 0, 0)
+codeScroll.ScrollBarThickness = 4
+codeScroll.Parent = codeFrame
 
-local codeScrolling = Instance.new("ScrollingFrame")
-codeScrolling.Size = UDim2.new(1, -30, 1, -105)
-codeScrolling.Position = UDim2.fromOffset(15, 50)
-codeScrolling.BackgroundColor3 = Color3.fromRGB(24, 24, 30)
-codeScrolling.BorderSizePixel = 0
-codeScrolling.ScrollBarThickness = 5
-codeScrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
-codeScrolling.Parent = codeFrame
+local codeBox = Instance.new("TextBox")
+codeBox.Size = UDim2.new(1, 0, 1, 0)
+codeBox.BackgroundTransparency = 1
+codeBox.MultiLine = true
+codeBox.TextEditable = false
+codeBox.Text = "-- Select a script..."
+codeBox.TextColor3 = Color3.fromRGB(210, 210, 230)
+codeBox.Font = Enum.Font.Code
+codeBox.TextSize = 11
+codeBox.TextXAlignment = Enum.TextXAlignment.Left
+codeBox.TextYAlignment = Enum.TextYAlignment.Top
+codeBox.Parent = codeScroll
 
-local codeScrollCorner = Instance.new("UICorner")
-codeScrollCorner.CornerRadius = UDim.new(0, 8)
-codeScrollCorner.Parent = codeScrolling
+local currentSrc = ""
+local copyBtn = Instance.new("TextButton")
+copyBtn.Size = UDim2.new(1, -20, 0, 38)
+copyBtn.Position = UDim2.new(0, 10, 1, -45)
+copyBtn.BackgroundColor3 = Color3.fromRGB(45, 180, 100)
+copyBtn.Text = "COPY SOURCE CODE"
+copyBtn.TextColor3 = Color3.new(1, 1, 1)
+copyBtn.Font = Enum.Font.GothamBold
+copyBtn.TextSize = 12
+copyBtn.Parent = codeFrame
 
-local codeText = Instance.new("TextBox")
-codeText.Size = UDim2.new(1, -16, 1, -16)
-codeText.Position = UDim2.fromOffset(8, 8)
-codeText.BackgroundTransparency = 1
-codeText.MultiLine = true
-codeText.ClearTextOnFocus = false
-codeText.TextEditable = false
-codeText.Text = "-- Select a script to preview source code..."
-codeText.TextColor3 = Color3.fromRGB(210, 210, 230)
-codeText.TextSize = 11
-codeText.Font = Enum.Font.Code
-codeText.TextXAlignment = Enum.TextXAlignment.Left
-codeText.TextYAlignment = Enum.TextYAlignment.Top
-codeText.Parent = codeScrolling
+Instance.new("UICorner", copyBtn).CornerRadius = UDim.new(0, 8)
 
-local copyButton = Instance.new("TextButton")
-copyButton.Size = UDim2.new(1, -30, 0, 40)
-copyButton.Position = UDim2.new(0, 15, 1, -48)
-copyButton.BackgroundColor3 = Color3.fromRGB(45, 180, 100)
-copyButton.BorderSizePixel = 0
-copyButton.Text = "COPY CODE TO CLIPBOARD"
-copyButton.TextColor3 = Color3.new(1, 1, 1)
-copyButton.TextSize = 13
-copyButton.Font = Enum.Font.GothamBold
-copyButton.Parent = codeFrame
-
-local copyCorner = Instance.new("UICorner")
-copyCorner.CornerRadius = UDim.new(0, 8)
-copyCorner.Parent = copyButton
-
-local currentSourceCode = ""
-copyButton.Activated:Connect(function()
+copyBtn.Activated:Connect(function()
     if setclipboard then
-        setclipboard(currentSourceCode)
-        copyButton.Text = "COPIED SUCCESSFULLY!"
+        setclipboard(currentSrc)
+        copyBtn.Text = "COPIED SUCCESSFULLY!"
         task.wait(1.5)
-        copyButton.Text = "COPY CODE TO CLIPBOARD"
-    else
-        copyButton.Text = "Error: setclipboard not supported"
-        task.wait(1.5)
-        copyButton.Text = "COPY CODE TO CLIPBOARD"
+        copyBtn.Text = "COPY SOURCE CODE"
     end
 end)
 
----------------------------------------------------------
--- MODES & FILTER LOGIC
----------------------------------------------------------
--- Modes: 1="Search", 2="Tools", 3="ServerStorage", 4="ServerScriptService"
-local modeIndex = 1
-local modes = {
-    {name = "SEARCH BY NAME", color = Color3.fromRGB(0, 220, 160)},
-    {name = "INSTANT TOOL SCRIPTS", color = Color3.fromRGB(255, 170, 50)},
-    {name = "SERVER STORAGE SCRIPTS", color = Color3.fromRGB(120, 160, 255)},
-    {name = "SERVER SCRIPT SERVICE", color = Color3.fromRGB(220, 100, 220)}
-}
-
-local function updateModeDisplay()
-    local m = modes[modeIndex]
-    modeButton.Text = "Mode: " .. m.name
-    modeButton.TextColor3 = m.color
-    
-    if modeIndex == 1 then
-        nameBox.Visible = true
-        checkButton.Text = "CHECK FOR ALL SCRIPTS"
-        status.Text = "Mode: Enter script name and scan."
-    else
-        nameBox.Visible = false
-        checkButton.Text = "LOAD ALL " .. m.name
-        status.Text = "Mode: Click to instantly list scripts in " .. m.name .. "."
-    end
-end
-
-modeButton.Activated:Connect(function()
-    modeIndex = modeIndex + 1
-    if modeIndex > #modes then
-        modeIndex = 1
-    end
-    updateModeDisplay()
-end)
-
-local function getScriptType(instance)
-    if instance:IsA("ModuleScript") then
-        return "ModuleScript"
-    elseif instance:IsA("LocalScript") then
-        return "LocalScript"
-    elseif instance:IsA("Script") then
-        return "Script"
-    end
-    return nil
-end
-
--- Check if parent or ancestry belongs to CorePackages or CoreGui
-local function isCoreInstance(instance)
-    local current = instance
-    while current and current ~= game do
-        if current.Name == "CorePackages" or current.Name == "CoreGui" or current.ClassName == "CoreGui" then
-            return true
-        end
-        current = current.Parent
+local function isCore(obj)
+    local cur = obj
+    while cur and cur ~= game do
+        if cur.Name == "CorePackages" or cur.Name == "CoreGui" or cur.ClassName == "CoreGui" then return true end
+        cur = cur.Parent
     end
     return false
 end
 
-local function getPath(instance)
-    local parts = {}
-    local current = instance
-    while current and current ~= game do
-        table.insert(parts, 1, current.Name)
-        current = current.Parent
-    end
-    return table.concat(parts, ".")
+local function getPath(obj)
+    local t = {} local cur = obj
+    while cur and cur ~= game do table.insert(t, 1, cur.Name) cur = cur.Parent end
+    return table.concat(t, ".")
 end
 
-local function clearResults()
-    for _, child in ipairs(scrolling:GetChildren()) do
-        if child:IsA("TextButton") then
-            child:Destroy()
-        end
-    end
-    scrolling.CanvasSize = UDim2.new(0, 0, 0, 0)
-end
+scanBtn.Activated:Connect(function()
+    for _, v in ipairs(scrolling:GetChildren()) do if v:IsA("TextButton") then v:Destroy() end end
+    local count = 0
+    local mode = modes[modeIdx]
 
-local function addResult(scriptInstance, scriptType)
-    local item = Instance.new("TextButton")
-    item.Size = UDim2.new(1, -5, 0, 52)
-    item.BackgroundColor3 = Color3.fromRGB(32, 32, 42)
-    item.BorderSizePixel = 0
-    item.Text = ""
-    item.AutoButtonColor = true
-    item.Parent = scrolling
+    local function addItem(inst)
+        count += 1
+        local item = Instance.new("TextButton", scrolling)
+        item.Size = UDim2.new(1, -4, 0, 48)
+        item.BackgroundColor3 = Color3.fromRGB(28, 28, 36)
+        item.Text = ""
+        Instance.new("UICorner", item).CornerRadius = UDim.new(0, 6)
 
-    local itemCorner = Instance.new("UICorner")
-    itemCorner.CornerRadius = UDim.new(0, 6)
-    itemCorner.Parent = item
+        local lbl = Instance.new("TextLabel", item)
+        lbl.Size = UDim2.new(1, -12, 1, 0)
+        lbl.Position = UDim2.fromOffset(6, 0)
+        lbl.BackgroundTransparency = 1
+        lbl.Text = inst.Name .. " [" .. inst.ClassName .. "]\n" .. getPath(inst)
+        lbl.TextColor3 = Color3.fromRGB(220, 220, 240)
+        lbl.Font = Enum.Font.Code
+        lbl.TextSize = 10
+        lbl.TextXAlignment = Enum.TextXAlignment.Left
+        lbl.TextYAlignment = Enum.TextYAlignment.Center
+        lbl.TextWrapped = true
 
-    local label = Instance.new("TextLabel")
-    label.Size = UDim2.new(1, -16, 1, 0)
-    label.Position = UDim2.fromOffset(8, 0)
-    label.BackgroundTransparency = 1
-    label.Text = scriptInstance.Name .. " [" .. scriptType .. "]\n" .. getPath(scriptInstance)
-    label.TextColor3 = Color3.fromRGB(225, 225, 240)
-    label.TextSize = 11
-    label.Font = Enum.Font.Code
-    label.TextWrapped = true
-    label.TextXAlignment = Enum.TextXAlignment.Left
-    label.TextYAlignment = Enum.TextYAlignment.Center
-    label.Parent = item
-
-    item.Activated:Connect(function()
-        codeTitle.Text = "PREVIEW: " .. scriptInstance.Name
-        
-        -- Bytecode-safe extraction with fallback mechanisms
-        local successSource, sourceContent = pcall(function()
-            if getscriptsource then
-                local src = getscriptsource(scriptInstance)
-                if src and src ~= "" then return src end
-            end
-            if decompile then
-                local dec = decompile(scriptInstance)
-                if dec and dec ~= "" then return dec end
-            end
-            return "--[[\nBytecode protection or extraction failed.\n]]--"
+        item.Activated:Connect(function()
+            codeTitle.Text = "PREVIEW: " .. inst.Name
+            local ok, res = pcall(function()
+                if getscriptsource then local s = getscriptsource(inst) if s and s ~= "" then return s end end
+                if decompile then local d = decompile(inst) if d and d ~= "" then return d end end
+                return "--[[\nBytecode protection or source unavailable.\n]]--"
+            end)
+            currentSrc = (ok and res) or "--[[\nExtraction error.\n]]--"
+            codeBox.Text = currentSrc
+            codeFrame.Visible = true
         end)
-        
-        if successSource and sourceContent and sourceContent ~= "" then
-            currentSourceCode = sourceContent
-        else
-            currentSourceCode = "--[[\nUnable to retrieve source: Bytecode inspection error or empty source.\n]]--"
+    end
+
+    if mode == "SEARCH" then
+        local query = nameBox.Text:lower()
+        for _, v in ipairs(game:GetDescendants()) do
+            if not isCore(v) and (v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript")) then
+                if query == "" or v.Name:lower():find(query, 1, true) then addItem(v) end
+            end
         end
-        
-        codeText.Text = currentSourceCode
-        codeFrame.Visible = true
-    end)
-end
-
-listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    scrolling.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
-end)
-
-codeText:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
-    codeScrolling.CanvasSize = UDim2.new(0, 0, 0, codeText.TextBounds.Y + 20)
-end)
-
--- Execute Action Button
-checkButton.Activated:Connect(function()
-    clearResults()
-    local found = 0
-
-    if modeIndex == 1 then
-        -- Search By Name across game, skipping CorePackages/CoreGui
-        local searchName = nameBox.Text:gsub("^%s*(.-)%s*$", "%1"):lower()
-        for _, instance in ipairs(game:GetDescendants()) do
-            if not isCoreInstance(instance) then
-                local scriptType = getScriptType(instance)
-                if scriptType then
-                    if searchName == "" or instance.Name:lower():find(searchName, 1, true) then
-                        addResult(instance, scriptType)
-                        found += 1
-                    end
+    elseif mode == "TOOLS" then
+        for _, v in ipairs(Workspace:GetDescendants()) do
+            if v:IsA("Tool") then
+                for _, c in ipairs(v:GetDescendants()) do
+                    if c:IsA("Script") or c:IsA("LocalScript") or c:IsA("ModuleScript") then addItem(c) end
                 end
             end
         end
-    elseif modeIndex == 2 then
-        -- Tools Mode: Scan Workspace and Players for Tools containing scripts
-        for _, instance in ipairs(Workspace:GetDescendants()) do
-            if instance:IsA("Tool") then
-                for _, child in ipairs(instance:GetDescendants()) do
-                    local scriptType = getScriptType(child)
-                    if scriptType then
-                        addResult(child, scriptType)
-                        found += 1
-                    end
-                end
-            end
+    elseif mode == "SERVERSTORAGE" then
+        for _, v in ipairs(ServerStorage:GetDescendants()) do
+            if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript") then addItem(v) end
         end
-        for _, playerObj in ipairs(Players:GetPlayers()) do
-            for _, instance in ipairs(playerObj:GetDescendants()) do
-                if instance:IsA("Tool") then
-                    for _, child in ipairs(instance:GetDescendants()) do
-                        local scriptType = getScriptType(child)
-                        if scriptType then
-                            addResult(child, scriptType)
-                            found += 1
-                        end
-                    end
-                end
-            end
-        end
-    elseif modeIndex == 3 then
-        -- ServerStorage Mode
-        for _, instance in ipairs(ServerStorage:GetDescendants()) do
-            local scriptType = getScriptType(instance)
-            if scriptType then
-                addResult(instance, scriptType)
-                found += 1
-            end
-        end
-    elseif modeIndex == 4 then
-        -- ServerScriptService Mode
-        for _, instance in ipairs(ServerScriptService:GetDescendants()) do
-            local scriptType = getScriptType(instance)
-            if scriptType then
-                addResult(instance, scriptType)
-                found += 1
-            end
+    elseif mode == "SERVERSCRIPTSERVICE" then
+        for _, v in ipairs(ServerScriptService:GetDescendants()) do
+            if v:IsA("Script") or v:IsA("LocalScript") or v:IsA("ModuleScript") then addItem(v) end
         end
     end
 
-    resultsTitle.Text = "RESULTS (" .. found .. ")"
+    scrolling.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 12)
+    resTitle.Text = "RESULTS (" .. count .. ")"
     resultsFrame.Visible = true
-
-    if found > 0 then
-        status.Text = "Found " .. found .. " script(s)."
-        status.TextColor3 = Color3.fromRGB(80, 240, 140)
-    else
-        status.Text = "No scripts found for this selection."
-        status.TextColor3 = Color3.fromRGB(240, 180, 80)
-    end
+    status.Text = "Found " .. count .. " script(s)."
+    status.TextColor3 = Color3.fromRGB(80, 240, 140)
 end)
 
----------------------------------------------------------
--- TOUCH DRAGGING FOR MAIN WINDOW
------
+-- Draggable implementation for Main Hub window
 local dragging, dragInput, dragStart, startPos
-
 topBar.InputBegan:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = true
@@ -582,27 +400,21 @@ topBar.InputBegan:Connect(function(input)
         startPos = main.Position
     end
 end)
-
 UserInputService.InputChanged:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragInput = input
     end
 end)
-
 RunService.RenderStepped:Connect(function()
     if dragging and dragInput then
         local delta = dragInput.Position - dragStart
-        main.Position = UDim2.new(
-            startPos.X.Scale, startPos.X.Offset + delta.X,
-            startPos.Y.Scale, startPos.Y.Offset + delta.Y
-        )
+        main.Position = UDim2.new(startPos.X.Scale, startPos.X.Offset + delta.X, startPos.Y.Scale, startPos.Y.Offset + delta.Y)
     end
 end)
-
 UserInputService.InputEnded:Connect(function(input)
     if input.UserInputType == Enum.UserInputType.MouseButton1 or input.UserInputType == Enum.UserInputType.Touch then
         dragging = false
     end
 end)
 
-print("[Zyo Inspector Pro] Loaded successfully.")
+print("[Zyo Control Hub] Loaded successfully.")
