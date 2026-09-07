@@ -1,6 +1,5 @@
--- Zyo Script Scanner Pro (Full Hierarchy Scanner + Code Inspector)
--- Scans all client-visible services for scripts, shows path and type,
--- and allows clicking any result to view source code and copy it.
+-- Zyo Script Scanner Pro+ (Mode Selector & Instant Tool Inspector)
+-- Switch between searching by name or instantly inspecting all Tool scripts across services.
 
 local Players = game:GetService("Players")
 local CoreGui = game:GetService("CoreGui")
@@ -15,19 +14,19 @@ local success, container = pcall(function()
 end)
 local targetParent = success and container or player:WaitForChild("PlayerGui")
 
-local oldGui = targetParent:FindFirstChild("ZyoScriptScannerPro")
+local oldGui = targetParent:FindFirstChild("ZyoScriptScannerProPlus")
 if oldGui then
     oldGui:Destroy()
 end
 
 local gui = Instance.new("ScreenGui")
-gui.Name = "ZyoScriptScannerPro"
+gui.Name = "ZyoScriptScannerProPlus"
 gui.ResetOnSpawn = false
 gui.Parent = targetParent
 
 -- Main Window Frame
 local main = Instance.new("Frame")
-main.Size = UDim2.fromOffset(340, 210)
+main.Size = UDim2.fromOffset(340, 255)
 main.Position = UDim2.fromScale(0.5, 0.5)
 main.AnchorPoint = Vector2.new(0.5, 0.5)
 main.BackgroundColor3 = Color3.fromRGB(18, 18, 22)
@@ -66,20 +65,36 @@ local title = Instance.new("TextLabel")
 title.Size = UDim2.new(1, -50, 1, 0)
 title.Position = UDim2.fromOffset(15, 0)
 title.BackgroundTransparency = 1
-title.Text = "ZYO SCRIPT SCANNER PRO"
+title.Text = "ZYO SCRIPT INSPECTOR"
 title.TextColor3 = Color3.fromRGB(240, 240, 255)
 title.TextSize = 14
 title.Font = Enum.Font.GothamBold
 title.TextXAlignment = Enum.TextXAlignment.Left
 title.Parent = topBar
 
--- Input Name Box
+-- Mode Select Button (Toggle between Search Name & Instant Tools)
+local modeButton = Instance.new("TextButton")
+modeButton.Size = UDim2.new(1, -30, 0, 38)
+modeButton.Position = UDim2.fromOffset(15, 52)
+modeButton.BackgroundColor3 = Color3.fromRGB(36, 36, 48)
+modeButton.BorderSizePixel = 0
+modeButton.Text = "Mode: SEARCH BY NAME"
+modeButton.TextColor3 = Color3.fromRGB(0, 220, 160)
+modeButton.TextSize = 13
+modeButton.Font = Enum.Font.GothamBold
+modeButton.Parent = main
+
+local modeCorner = Instance.new("UICorner")
+modeCorner.CornerRadius = UDim.new(0, 8)
+modeCorner.Parent = modeButton
+
+-- Input Name Box (Used in Name Search mode)
 local nameBox = Instance.new("TextBox")
-nameBox.Size = UDim2.new(1, -30, 0, 42)
-nameBox.Position = UDim2.fromOffset(15, 52)
+nameBox.Size = UDim2.new(1, -30, 0, 40)
+nameBox.Position = UDim2.fromOffset(15, 98)
 nameBox.BackgroundColor3 = Color3.fromRGB(28, 28, 38)
 nameBox.BorderSizePixel = 0
-nameBox.PlaceholderText = "Leave blank for ALL or enter name..."
+nameBox.PlaceholderText = "Enter script name..."
 nameBox.Text = ""
 nameBox.TextColor3 = Color3.new(1, 1, 1)
 nameBox.PlaceholderColor3 = Color3.fromRGB(120, 120, 140)
@@ -92,10 +107,10 @@ local boxCorner = Instance.new("UICorner")
 boxCorner.CornerRadius = UDim.new(0, 8)
 boxCorner.Parent = nameBox
 
--- Scan Button
+-- Action Button (Scan / Instant Load)
 local checkButton = Instance.new("TextButton")
 checkButton.Size = UDim2.new(1, -30, 0, 42)
-checkButton.Position = UDim2.fromOffset(15, 106)
+checkButton.Position = UDim2.fromOffset(15, 146)
 checkButton.BackgroundColor3 = Color3.fromRGB(45, 120, 220)
 checkButton.BorderSizePixel = 0
 checkButton.Text = "CHECK FOR ALL SCRIPTS"
@@ -111,9 +126,9 @@ buttonCorner.Parent = checkButton
 -- Status Label
 local status = Instance.new("TextLabel")
 status.Size = UDim2.new(1, -30, 0, 25)
-status.Position = UDim2.fromOffset(15, 162)
+status.Position = UDim2.fromOffset(15, 198)
 status.BackgroundTransparency = 1
-status.Text = "Ready to scan all services."
+status.Text = "Ready. Tap Mode to switch to Instant Tools."
 status.TextColor3 = Color3.fromRGB(160, 160, 180)
 status.TextSize = 12
 status.Font = Enum.Font.Gotham
@@ -279,7 +294,6 @@ closeCodeBtn.Activated:Connect(function()
     codeFrame.Visible = false
 end)
 
--- Code Scrolling Box
 local codeScrolling = Instance.new("ScrollingFrame")
 codeScrolling.Size = UDim2.new(1, -30, 1, -105)
 codeScrolling.Position = UDim2.fromOffset(15, 50)
@@ -308,7 +322,6 @@ codeText.TextXAlignment = Enum.TextXAlignment.Left
 codeText.TextYAlignment = Enum.TextYAlignment.Top
 codeText.Parent = codeScrolling
 
--- Copy Button
 local copyButton = Instance.new("TextButton")
 copyButton.Size = UDim2.new(1, -30, 0, 40)
 copyButton.Position = UDim2.new(0, 15, 1, -48)
@@ -339,8 +352,28 @@ copyButton.Activated:Connect(function()
 end)
 
 ---------------------------------------------------------
--- SCANNING LOGIC ACROSS ALL SERVICES
+-- SCANNING MODES LOGIC
 ---------------------------------------------------------
+local currentMode = "Search" -- "Search" or "Tools"
+
+modeButton.Activated:Connect(function()
+    if currentMode == "Search" then
+        currentMode = "Tools"
+        modeButton.Text = "Mode: INSTANT TOOL SCRIPTS"
+        modeButton.TextColor3 = Color3.fromRGB(255, 170, 50)
+        nameBox.Visible = false
+        checkButton.Text = "LOAD ALL TOOL SCRIPTS"
+        status.Text = "Mode: Click to instantly list scripts inside Tools."
+    else
+        currentMode = "Search"
+        modeButton.Text = "Mode: SEARCH BY NAME"
+        modeButton.TextColor3 = Color3.fromRGB(0, 220, 160)
+        nameBox.Visible = true
+        checkButton.Text = "CHECK FOR ALL SCRIPTS"
+        status.Text = "Mode: Enter script name and scan."
+    end
+end)
+
 local function getScriptType(instance)
     if instance:IsA("ModuleScript") then
         return "ModuleScript"
@@ -400,14 +433,13 @@ local function addResult(scriptInstance, scriptType)
     item.Activated:Connect(function()
         codeTitle.Text = "PREVIEW: " .. scriptInstance.Name
         
-        -- Try reading source if executor supports getscriptbytecode / decompile or direct getscriptsource
         local successSource, sourceContent = pcall(function()
             if getscriptsource then
                 return getscriptsource(scriptInstance)
             elseif decompile then
                 return decompile(scriptInstance)
             else
-                return "--[[\nExecutor does not support direct script source retrieval (missing getscriptsource/decompile).\n]]--"
+                return "--[[\nExecutor does not support direct script source retrieval.\n]]--"
             end
         end)
         
@@ -423,39 +455,52 @@ local function addResult(scriptInstance, scriptType)
 end
 
 listLayout:GetPropertyChangedSignal("AbsoluteContentSize"):Connect(function()
-    scrolling.CanvasSize = UDim2.fromOffset(0, listLayout.AbsoluteContentSize.Y + 16)
+    scrolling.CanvasSize = UDim2.new(0, 0, 0, listLayout.AbsoluteContentSize.Y + 16)
 end)
 
 codeText:GetPropertyChangedSignal("AbsoluteSize"):Connect(function()
     codeScrolling.CanvasSize = UDim2.new(0, 0, 0, codeText.TextBounds.Y + 20)
 end)
 
--- Scan Trigger
+-- Execute Action Button
 checkButton.Activated:Connect(function()
-    local searchName = nameBox.Text:gsub("^%s*(.-)%s*$", "%1"):lower()
     clearResults()
-
     local found = 0
-    
-    -- Scan every service/descendant in the entire game tree visible to client
-    for _, instance in ipairs(game:GetDescendants()) do
-        local scriptType = getScriptType(instance)
-        if scriptType then
-            if searchName == "" or instance.Name:lower():find(searchName, 1, true) then
-                addResult(instance, scriptType)
-                found += 1
+
+    if currentMode == "Search" then
+        local searchName = nameBox.Text:gsub("^%s*(.-)%s*$", "%1"):lower()
+        for _, instance in ipairs(game:GetDescendants()) do
+            local scriptType = getScriptType(instance)
+            if scriptType then
+                if searchName == "" or instance.Name:lower():find(searchName, 1, true) then
+                    addResult(instance, scriptType)
+                    found += 1
+                end
+            end
+        end
+    elseif currentMode == "Tools" then
+        -- Instantly scan specifically inside Tool instances across the game
+        for _, instance in ipairs(game:GetDescendants()) do
+            if instance:IsA("Tool") then
+                for _, child in ipairs(instance:GetDescendants()) do
+                    local scriptType = getScriptType(child)
+                    if scriptType then
+                        addResult(child, scriptType)
+                        found += 1
+                    end
+                end
             end
         end
     end
 
-    resultsTitle.Text = "SCRIPT RESULTS (" .. found .. ")"
+    resultsTitle.Text = "RESULTS (" .. found .. ")"
     resultsFrame.Visible = true
 
     if found > 0 then
-        status.Text = "Found " .. found .. " matching script(s)."
+        status.Text = "Found " .. found .. " script(s)."
         status.TextColor3 = Color3.fromRGB(80, 240, 140)
     else
-        status.Text = "No matching scripts found across services."
+        status.Text = "No scripts found for this selection."
         status.TextColor3 = Color3.fromRGB(240, 180, 80)
     end
 end)
@@ -495,4 +540,4 @@ UserInputService.InputEnded:Connect(function(input)
     end
 end)
 
-print("[Zyo Scanner Pro] Loaded successfully.")
+print("[Zyo Inspector] Loaded successfully.")
