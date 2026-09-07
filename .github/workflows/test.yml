@@ -1,0 +1,24 @@
+name: Run Luau Tests
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+
+      - name: Install Luau
+        run: |
+          curl -L -o luau.zip https://github.com/luau-lang/luau/releases/latest/download/luau-ubuntu.zip
+          unzip luau.zip -d luau-bin
+          sudo mv luau-bin/luau /usr/local/bin/luau
+          luau --version
+
+      - name: Run test suite
+        run: luau tests/run_tests.lua
